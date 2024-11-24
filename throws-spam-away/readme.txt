@@ -3,8 +3,8 @@ Contributors: tsato
 Donate link: https://gti.co.jp/throws-spam-away
 Tags: comments, spam
 Requires at least: 5.1
-Tested up to: 6.6
-Stable tag: 3.6.1
+Tested up to: 6.7.1
+Stable tag: 3.6.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,7 @@ IPアドレスの指定「ブロックリスト」「許可リスト」共に「
 スパム判定を解除されたコメントはスパムデータから削除されます。
 
 -- これまでの変更点について
+※ バージョンの 第4位はWordPressやPHPのバージョンアップの確認を行った際に変更しています。機能変更はありません。
 ・バージョン 3.6
 スパムコメントが保存される際の投稿日時を修正。
 設定項目の保存時に発生するエラーを修正。
