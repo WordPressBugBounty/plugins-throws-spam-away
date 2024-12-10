@@ -4,7 +4,7 @@
  Plugin URI: https://gti.co.jp/throws-spam-away/
  Description: コメント内に日本語の記述が存在しない場合はあたかも受け付けたように振る舞いながらも捨ててしまうプラグイン
  Author: 株式会社ジーティーアイ　さとう　たけし
- Version: 3.6.1.1
+ Version: 3.7
  Author URI: https://gti.co.jp/
  License: GPL2
  Text Domain: throws-spam-away
@@ -45,8 +45,11 @@ $tsa_db_version = 3.5;  // 3.5からデータベース変更 [comment_content, c
 
 /** 初期設定 */
 /**
- * 設定値変更 2.6.2から
+ * 設定値変更 3.7から
  */
+
+/** ログイン状態でもスパム判定するか */
+$df_logged_in_flg = 2; // 1: する 2:しない
 
 /** ダミー項目でのスパム判定をするか */
 $df_dummy_param_field_flg = 1;   // 1: する 2:しない

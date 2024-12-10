@@ -72,6 +72,7 @@ class ThrowsSpamAway
      */
     public function activate()
     {
+        global $df_logged_in_flg;
         global $df_dummy_param_field_flg, $df_on_flg, $df_without_title_str, $df_japanese_string_min_cnt;
         global $df_back_second, $df_caution_msg;
         global $df_caution_msg_pnt, $df_err_msg, $df_url_cnt_chk_flg;
@@ -86,6 +87,7 @@ class ThrowsSpamAway
         global $df_only_whitelist_ip_flg;
 
         // 初期設定値
+        update_option('tsa_logged_in_flg', $df_logged_in_flg);
         update_option('tsa_dummy_param_field_flg', $df_dummy_param_field_flg);
         update_option('tsa_on_flg', $df_on_flg);
         update_option('tsa_without_title_str', $df_without_title_str);
@@ -297,6 +299,7 @@ class ThrowsSpamAway
     {
         global $newThrowsSpamAway;
         global $user_ID;
+        global $df_logged_in_flg;
         global $df_back_second;
         global $df_err_msg;
         global $df_ng_key_err_msg;
@@ -307,8 +310,9 @@ class ThrowsSpamAway
         global $df_only_whitelist_ip_flg;
         global $df_spam_data_save;
 
-        // ログインしている場合は通過させます。
-        if ($user_ID) {
+        // ログインしている場合は通過させるか ※デフォルトは通過させる
+        $tsa_logged_in_flg = intval(get_option('tsa_logged_in_flg', $df_logged_in_flg));
+        if ($user_ID && $tsa_logged_in_flg === intval($df_logged_in_flg)) {
             return $commentdata;
         }
 
@@ -808,7 +812,7 @@ class ThrowsSpamAway
             $query            = $wpdb->get_row($this_ip_spam_cnt);
             // $query があればスパム投稿回数を取得
             $spam_count = 0;
-            if ($query && isset( $query->spam_count )) {
+            if ($query && isset($query->spam_count)) {
                 $spam_count       = intval($query->spam_count);
             }
             // 最後のスパム投稿から○分超えていなければアウト！！
@@ -894,7 +898,7 @@ class ThrowsSpamAway
     {
         global $wpdb; // WordPress DBアクセス
         global $tsa_version;
-
+        global $df_logged_in_flg;    // ログインユーザーのみ許可するか初期設定値
         global $df_on_flg, $df_without_title_str, $df_dummy_param_field_flg, $df_japanese_string_min_cnt;
         global $df_caution_msg, $df_caution_msg_pnt, $df_back_second, $df_err_msg, $df_ng_key_err_msg;
         global $df_must_key_err_msg, $df_tb_on_flg, $df_tb_url_flg, $df_block_ip_address_err_msg;
@@ -911,6 +915,7 @@ class ThrowsSpamAway
         if (isset($_POST['tsa_nonce'])) {
             check_admin_referer('tsa_action', 'tsa_nonce');
             $tsa_on_flg = isset($_POST['tsa_on_flg']) ? intval($_POST['tsa_on_flg']) : $df_on_flg;
+            $tsa_logged_in_flg = isset($_POST['tsa_logged_in_flg']) ? intval($_POST['tsa_logged_in_flg']) : $df_logged_in_flg;
             $tsa_without_title_str = isset($_POST['tsa_without_title_str']) ? intval($_POST['tsa_without_title_str']) : $df_without_title_str;
             $tsa_japanese_string_min_count = isset($_POST['tsa_japanese_string_min_count']) ? intval($_POST['tsa_japanese_string_min_count']) : $df_japanese_string_min_cnt;
             $tsa_back_second = isset($_POST['tsa_back_second']) ? intval($_POST['tsa_back_second']) : $df_back_second;
@@ -944,6 +949,7 @@ class ThrowsSpamAway
             $tsa_spam_champuru_by_text = isset($_POST['tsa_spam_champuru_by_text']) ? sanitize_text_field($_POST['tsa_spam_champuru_by_text']) : $df_spam_champuru_by_text;
             $tsa_only_whitelist_ip_flg = isset($_POST['tsa_only_whitelist_ip_flg']) ? intval($_POST['tsa_only_whitelist_ip_flg']) : $df_only_whitelist_ip_flg;
             update_option('tsa_on_flg', $tsa_on_flg);
+            update_option('tsa_logged_in_flg', $tsa_logged_in_flg);
             update_option('tsa_without_title_str', $tsa_without_title_str);
             update_option('tsa_japanese_string_min_count', $tsa_japanese_string_min_count);
             update_option('tsa_back_second', $tsa_back_second);
@@ -985,7 +991,7 @@ class ThrowsSpamAway
         }
 
         wp_enqueue_style('thorows-spam-away-styles', plugins_url('/css/tsa_styles.css', __FILE__), array(), $tsa_version);
-        ?>
+?>
         <style>
             table.form-table {}
 
@@ -1067,20 +1073,40 @@ class ThrowsSpamAway
                 <?php wp_nonce_field('update-options'); ?>
                 <table class="form-table">
                     <tr>
+                        <th scope="row">ログイン中でもスパム対策機能を有効にする</th>
+                        <td><?php
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_logged_in_flg', $df_logged_in_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?>
+                            <input type="radio" name="tsa_logged_in_flg" class="label" id="tsa_logged_in_flg_1" value="1" <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_logged_in_flg_1" class="label">する</label>&nbsp;
+                            <input type="radio" name="tsa_logged_in_flg" class="label" id="tsa_logged_in_flg_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_logged_in_flg_2" class="label">しない</label><br>
+                            ※ログイン中にスパム対策機能を有効にする場合、自身での投稿も設定の影響を受けますのでご注意ください。<br>
+                            （初期設定：<?php echo ($df_logged_in_flg === 2 ? "しない" : "する"); ?>）
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="form-table">
+                    <tr>
                         <th scope="row">人の目には見えないダミーの入力項目を作成し、そこに入力があれば無視対象とする<br>（スパムプログラム投稿に有効です）</th>
                         <td><?php
-                                    $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_dummy_param_field_flg', $df_dummy_param_field_flg)) === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?>
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_dummy_param_field_flg', $df_dummy_param_field_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?>
                             <input type="radio" name="tsa_dummy_param_field_flg" class="label" id="tsa_dummy_param_field_flg_1" value="1" <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_dummy_param_field_flg_1" class="label">する</label>&nbsp;
                             <input type="radio" name="tsa_dummy_param_field_flg" class="label" id="tsa_dummy_param_field_flg_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_dummy_param_field_flg_2" class="label">しない</label><br>
                             ※ダミー項目の制御にJavaScriptを使用しますのでJavaScriptが動作しない環境からの投稿はスパム判定されてしまいます。ご注意の上、ご利用ください。<br>
-                            （初期設定：<?php echo($df_dummy_param_field_flg === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_dummy_param_field_flg === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                 </table>
@@ -1088,31 +1114,31 @@ class ThrowsSpamAway
                     <tr>
                         <th scope="row">日本語が存在しない場合、無視対象とする<br>（日本語文字列が存在しない場合無視対象となります。）</th>
                         <td><?php
-        $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_on_flg', $df_on_flg)) === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?> <input type="radio" name="tsa_on_flg" id="tsa_on_flg_1" value="1" <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_on_flg_1" class="label">する</label>&nbsp;
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_on_flg', $df_on_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?> <input type="radio" name="tsa_on_flg" id="tsa_on_flg_1" value="1" <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_on_flg_1" class="label">する</label>&nbsp;
                             <input type="radio" name="tsa_on_flg" id="tsa_on_flg_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_on_flg_2" class="label">しない</label><br>
-                            （初期設定：<?php echo($df_on_flg === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_on_flg === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">タイトルの文字列が含まれる場合、日本語としてカウントしない<br>（日本語を無理やり入れるためにタイトルを利用する方法を排除する）</th>
                         <td><?php
-        $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_without_title_str', $df_without_title_str)) !== 1) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        } ?>
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_without_title_str', $df_without_title_str)) !== 1) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            } ?>
                             <input type="radio" name="tsa_without_title_str" id="tsa_without_title_str_1" value="1" <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_without_title_str_1" class="label">する</label>&nbsp;
                             <input type="radio" name="tsa_without_title_str" id="tsa_without_title_str_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_without_title_str_2" class="label">しない</label><br>
-                            （初期設定：<?php echo($df_without_title_str === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_without_title_str === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                     <tr>
@@ -1141,23 +1167,23 @@ class ThrowsSpamAway
                     <tr>
                         <th scope="row" id="tsa_caution_msg_point">コメント注意文言の表示位置</th>
                         <td><?php
-        $chk_1                       = '';
-        $chk_2                       = '';
-        $chk_3                     = '';
-        $opt_tsa_caution_msg_point = intval(get_option('tsa_caution_msg_point', $df_caution_msg_pnt));
-        if ($opt_tsa_caution_msg_point === 3) {
-            $chk_3 = ' checked="checked"';
-        } elseif ($opt_tsa_caution_msg_point === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?>
+                            $chk_1                       = '';
+                            $chk_2                       = '';
+                            $chk_3                     = '';
+                            $opt_tsa_caution_msg_point = intval(get_option('tsa_caution_msg_point', $df_caution_msg_pnt));
+                            if ($opt_tsa_caution_msg_point === 3) {
+                                $chk_3 = ' checked="checked"';
+                            } elseif ($opt_tsa_caution_msg_point === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?>
                             <input type="radio" name="tsa_caution_msg_point" id="tsa_caution_msg_point_1" value='1' <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_caution_msg_point_1" class="label_long">コメント送信ボタンの下</label>&nbsp;
                             <input type="radio" name="tsa_caution_msg_point" id="tsa_caution_msg_point_2" value='3' <?php esc_attr_e($chk_3); ?> />&nbsp;<label for="tsa_caution_msg_point_2" class="label_long">コメント送信ボタンの上</label>&nbsp;
                             <input type="radio" name="tsa_caution_msg_point" id="tsa_caution_msg_point_3" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_caution_msg_point_3" class="label_long">コメント送信フォームの下</label>
                             <p>
-                                （初期設定：<?php echo($df_caution_msg_pnt === 2 ? "コメント送信フォームの下" : ($df_caution_msg_pnt === 1 ? "コメント送信ボタンの下" : "コメント送信ボタンの上")); ?>
+                                （初期設定：<?php echo ($df_caution_msg_pnt === 2 ? "コメント送信フォームの下" : ($df_caution_msg_pnt === 1 ? "コメント送信ボタンの下" : "コメント送信ボタンの上")); ?>
                                 ）</p>
                         </td>
                     </tr>
@@ -1179,14 +1205,14 @@ class ThrowsSpamAway
                     <tr>
                         <th scope="row">URLらしき文字列が混入している場合エラーとするか</th>
                         <td><?php
-        $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_url_count_on_flg', $df_url_cnt_chk_flg)) === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?> <input type="radio" name="tsa_url_count_on_flg" id="tsa_url_count_on_flg_1" value='1' <?php esc_attr_e($chk_1); ?>>&nbsp;<label for="tsa_url_count_on_flg_1" class="label">する</label>
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_url_count_on_flg', $df_url_cnt_chk_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?> <input type="radio" name="tsa_url_count_on_flg" id="tsa_url_count_on_flg_1" value='1' <?php esc_attr_e($chk_1); ?>>&nbsp;<label for="tsa_url_count_on_flg_1" class="label">する</label>
                             <input type="radio" name="tsa_url_count_on_flg" id="tsa_url_count_on_flg_2" value="2" <?php esc_attr_e($chk_2); ?>>&nbsp;<label for="tsa_url_count_on_flg_2" class="label">しない</label>
                             <p>
                                 する場合の制限数（入力数値まで許容）：<input type="number" min="0" step="1" name="tsa_ok_url_count" size="2" value="<?php esc_attr_e(get_option('tsa_ok_url_count', $df_ok_url_cnt)); ?>"><br>
@@ -1238,32 +1264,32 @@ class ThrowsSpamAway
                     <tr>
                         <th scope="row">上記設定をトラックバック記事にも採用する</th>
                         <td><?php
-        $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_tb_on_flg', $df_tb_on_flg)) === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?> <input type="radio" name="tsa_tb_on_flg" id="tsa_tb_on_flg_1" value='1' <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_tb_on_flg_1" class="label">する</label>&nbsp;
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_tb_on_flg', $df_tb_on_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?> <input type="radio" name="tsa_tb_on_flg" id="tsa_tb_on_flg_1" value='1' <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_tb_on_flg_1" class="label">する</label>&nbsp;
                             <input type="radio" name="tsa_tb_on_flg" id="tsa_tb_on_flg_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_tb_on_flg_2" class="label">しない</label><br>
-                            （初期設定：<?php echo($df_tb_on_flg === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_tb_on_flg === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">トラックバック記事にも採用する場合、ついでにこちらのURLが含まれているか判断する
                         </th>
                         <td><?php
-        $chk_1 = '';
-        $chk_2 = '';
-        if (intval(get_option('tsa_tb_url_flg', $df_tb_url_flg)) === 2) {
-            $chk_2 = ' checked="checked"';
-        } else {
-            $chk_1 = ' checked="checked"';
-        }
-        ?> <input type="radio" name="tsa_tb_url_flg" id="tsa_tb_url_flg_1" value='1' <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_tb_url_flg_1" class="label">する</label>
+                            $chk_1 = '';
+                            $chk_2 = '';
+                            if (intval(get_option('tsa_tb_url_flg', $df_tb_url_flg)) === 2) {
+                                $chk_2 = ' checked="checked"';
+                            } else {
+                                $chk_1 = ' checked="checked"';
+                            }
+                            ?> <input type="radio" name="tsa_tb_url_flg" id="tsa_tb_url_flg_1" value='1' <?php esc_attr_e($chk_1); ?> />&nbsp;<label for="tsa_tb_url_flg_1" class="label">する</label>
                             <input type="radio" name="tsa_tb_url_flg" id="tsa_tb_url_flg_2" value="2" <?php esc_attr_e($chk_2); ?> />&nbsp;<label for="tsa_tb_url_flg_2" class="label">しない</label><br>
-                            （初期設定：<?php echo($df_tb_url_flg === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_tb_url_flg === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                 </table>
@@ -1274,43 +1300,43 @@ class ThrowsSpamAway
                     <tr>
                         <th scope="row">WordPressのコメントで「スパム」にしたIPからの投稿にも採用する</th>
                         <td><?php
-        $chk = '';
-        if (intval(get_option('tsa_ip_block_from_spam_chk_flg', $df_ip_block_from_spam_chk_flg)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?> <label><input type="checkbox" name="tsa_ip_block_from_spam_chk_flg" value='1' class="wppd-ui-toggle" <?php esc_attr_e($chk); ?> />
+                            $chk = '';
+                            if (intval(get_option('tsa_ip_block_from_spam_chk_flg', $df_ip_block_from_spam_chk_flg)) === 1) {
+                                $chk = ' checked="checked"';
+                            }
+                            ?> <label><input type="checkbox" name="tsa_ip_block_from_spam_chk_flg" value='1' class="wppd-ui-toggle" <?php esc_attr_e($chk); ?> />
                                 <br>スパム投稿設定したIPアドレスからの投稿も無視する</label>&nbsp;
                             <p>※Akismet等で自動的にスパムマークされたものも含む<br>
-                                （初期設定：<?php echo($df_ip_block_from_spam_chk_flg !== 1 ? "しない" : "する"); ?>）
+                                （初期設定：<?php echo ($df_ip_block_from_spam_chk_flg !== 1 ? "しない" : "する"); ?>）
                             </p>
                             <?php
-        // wp_commentsの　comment_approved　カラムが「spam」のIP_ADDRESSからの投稿は無視する
-        $results = $wpdb->get_results("SELECT DISTINCT comment_author_IP FROM  $wpdb->comments WHERE comment_approved =  'spam' ORDER BY comment_author_IP ASC ");
-        ?>
+                            // wp_commentsの　comment_approved　カラムが「spam」のIP_ADDRESSからの投稿は無視する
+                            $results = $wpdb->get_results("SELECT DISTINCT comment_author_IP FROM  $wpdb->comments WHERE comment_approved =  'spam' ORDER BY comment_author_IP ASC ");
+                            ?>
                             <p><strong>現在「spam」フラグが付いているIPアドレス：</strong>
                                 <?php
-            if ($results) {
-                ?><br>
+                                if ($results) {
+                                ?><br>
                             <blockquote>
                                 <?php
-                    $add_ip_addresses = '';
-                foreach ($results as $item) {
-                    $spam_ip = esc_attr($item->comment_author_IP);
-                    // ブロックしたいIP
-                    if (strlen($add_ip_addresses) > 0) {
-                        $add_ip_addresses .= ',';
-                    }
-                    $add_ip_addresses .= $spam_ip;
-                    ?>
+                                    $add_ip_addresses = '';
+                                    foreach ($results as $item) {
+                                        $spam_ip = esc_attr($item->comment_author_IP);
+                                        // ブロックしたいIP
+                                        if (strlen($add_ip_addresses) > 0) {
+                                            $add_ip_addresses .= ',';
+                                        }
+                                        $add_ip_addresses .= $spam_ip;
+                                ?>
                                     <b><?php esc_attr_e($spam_ip); ?> </b><br>
                                 <?php
-                }
-                ?>
+                                    }
+                                ?>
                                 &nbsp;<input type="button" onclick="addIpAddresses('<?php esc_attr_e($add_ip_addresses); ?>');" value="これらのIPアドレスを任意のブロック対象IPアドレスにコピーする">
                             </blockquote>
                         <?php
-            } else {
-                ?>
+                                } else {
+                        ?>
                             なし
                         <?php } ?>
                         </p>
@@ -1335,13 +1361,13 @@ class ThrowsSpamAway
                         </th>
                         <td>
                             <?php
-                    $chk = '';
-        if (intval(get_option('tsa_spam_champuru_flg', $df_spam_champuru_flg)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?>
+                            $chk = '';
+                            if (intval(get_option('tsa_spam_champuru_flg', $df_spam_champuru_flg)) === 1) {
+                                $chk = ' checked="checked"';
+                            }
+                            ?>
                             <label><input type="checkbox" name="tsa_spam_champuru_flg" class="wppd-ui-toggle" value='1' <?php esc_attr_e($chk); ?> />スパム拒否リストサービスに登録されているIPアドレスからのコメントを拒否する</label><br>
-                            （初期設定：<?php echo($df_spam_champuru_flg === 2 ? "しない" : "する"); ?>）
+                            （初期設定：<?php echo ($df_spam_champuru_flg === 2 ? "しない" : "する"); ?>）
                         </td>
                     </tr>
                     <tr>
@@ -1363,13 +1389,13 @@ class ThrowsSpamAway
                             <textarea name="tsa_white_ip_addresses" id="tsa_white_ip_addresses" cols="80" rows="10"><?php esc_attr_e(get_option('tsa_white_ip_addresses', '')); ?></textarea>
                             <p>
                                 <?php
-            $chk = '';
-        if (intval(get_option('tsa_only_whitelist_ip_flg', $df_only_whitelist_ip_flg)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?> <label><input type="checkbox" name="tsa_only_whitelist_ip_flg" class="wppd-ui-toggle" value='1' <?php esc_attr_e($chk); ?> />&nbsp;<?php _e('許可リストに登録したIPアドレス以外からの投稿を無視する（許可リストへの登録がない場合は有効になりません）', 'throws-spam-away'); ?>
+                                $chk = '';
+                                if (intval(get_option('tsa_only_whitelist_ip_flg', $df_only_whitelist_ip_flg)) === 1) {
+                                    $chk = ' checked="checked"';
+                                }
+                                ?> <label><input type="checkbox" name="tsa_only_whitelist_ip_flg" class="wppd-ui-toggle" value='1' <?php esc_attr_e($chk); ?> />&nbsp;<?php _e('許可リストに登録したIPアドレス以外からの投稿を無視する（許可リストへの登録がない場合は有効になりません）', 'throws-spam-away'); ?>
                                 </label>
-                                <?php _e('（初期設定：', 'throws-spam-away'); ?><?php echo($df_only_whitelist_ip_flg !== 1 ? __("しない", 'throws-spam-away') : __("する", 'throws-spam-away')); ?><?php _e('）', 'throws-spam-away'); ?>
+                                <?php _e('（初期設定：', 'throws-spam-away'); ?><?php echo ($df_only_whitelist_ip_flg !== 1 ? __("しない", 'throws-spam-away') : __("する", 'throws-spam-away')); ?><?php _e('）', 'throws-spam-away'); ?>
                                 <br>
                                 <?php _e('※許可リストで登録したIP以外の投稿は無視されますのでこの設定は慎重に行ってください。（すべての設定より優先します）<br>※エラーメッセージは「ブロック対象のIPアドレスからの投稿時に表示される文言」が使われます。（エラー表示時のみ）', 'throws-spam-away'); ?>
                             </p>
@@ -1397,10 +1423,10 @@ class ThrowsSpamAway
                         <th scope="row"><?php _e('スパムコメント投稿情報を保存しますか？', 'throws-spam-away'); ?></th>
                         <td><?php
                             $chk = '';
-        if (intval(get_option('tsa_spam_data_save', $df_spam_data_save)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?> <label><input type="checkbox" name="tsa_spam_data_save" class="wppd-ui-toggle" id="tsa_spam_data_save" value='1' <?php esc_attr_e($chk); ?> />&nbsp;<?php _e('スパムコメント情報を保存する', 'throws-spam-away'); ?>
+                            if (intval(get_option('tsa_spam_data_save', $df_spam_data_save)) === 1) {
+                                $chk = ' checked="checked"';
+                            }
+                            ?> <label><input type="checkbox" name="tsa_spam_data_save" class="wppd-ui-toggle" id="tsa_spam_data_save" value='1' <?php esc_attr_e($chk); ?> />&nbsp;<?php _e('スパムコメント情報を保存する', 'throws-spam-away'); ?>
                             </label>
                             <p>
                                 <?php echo wp_kses_post(sprintf(__("※Throws SPAM Away設定画面表示時に時間がかかることがあります。<br>※「保存する」を解除した場合でもテーブルは残りますので%d日以内の取得データは表示されます。", 'throws-spam-away'), get_option('tsa_spam_keep_day_count', $df_spam_keep_day_cnt))); ?>
@@ -1414,11 +1440,11 @@ class ThrowsSpamAway
                         <td>
                             <input type="number" min="1" step="1" name="tsa_spam_keep_day_count" size="3" value="<?php echo intval(get_option('tsa_spam_keep_day_count', $df_spam_keep_day_cnt)); ?>"><?php esc_attr_e(sprintf(__("日分（最低%d日）", 'throws-spam-away'), $lower_spam_keep_day_cnt)); ?><?php esc_attr_e(sprintf(__("（初期設定： %d）", 'throws-spam-away'), $df_spam_keep_day_cnt)); ?>
                             <?php
-        $chk = '';
-        if (intval(get_option('tsa_spam_data_delete_flg', $df_spam_data_delete_flg)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?>
+                            $chk = '';
+                            if (intval(get_option('tsa_spam_data_delete_flg', $df_spam_data_delete_flg)) === 1) {
+                                $chk = ' checked="checked"';
+                            }
+                            ?>
                             <p>
                                 <label><input type="checkbox" name="tsa_spam_data_delete_flg" class="wppd-ui-toggle" value='1' <?php esc_attr_e($chk); ?>>&nbsp;<?php _e("期間が過ぎたデータを削除する", 'throws-spam-away'); ?>
                                 </label>
@@ -1435,11 +1461,11 @@ class ThrowsSpamAway
                         <th scope="row"><?php _e("機能設定", 'throws-spam-away'); ?></th>
                         <td>
                             <?php
-        $chk = '';
-        if (intval(get_option('tsa_spam_limit_flg', $df_spam_limit_flg)) === 1) {
-            $chk = ' checked="checked"';
-        }
-        ?>
+                            $chk = '';
+                            if (intval(get_option('tsa_spam_limit_flg', $df_spam_limit_flg)) === 1) {
+                                $chk = ' checked="checked"';
+                            }
+                            ?>
                             <label><input type="checkbox" name="tsa_spam_limit_flg" class="wppd-ui-toggle" id="tsa_spam_limit_flg" value='1' <?php esc_attr_e($chk); ?> />&nbsp;<?php _e("機能させる", 'throws-spam-away'); ?>
                             </label>
                             <p>
@@ -1711,17 +1737,17 @@ class ThrowsSpamAway
         );
         // スパムデータ画面のCSS読み込み
         wp_enqueue_style('thorows-spam-away-data-styles', plugins_url('/css/tsa_data_styles.css', __FILE__), array(), $tsa_version);
-        ?>
+    ?>
         <div class="wrap">
             <?php
-                if (intval(get_option('tsa_spam_data_save')) === 1) {
-                    if ($gdays < $lower_spam_keep_day_cnt) {
-                        $gdays = $lower_spam_keep_day_cnt;
-                    }
-                    // 表カラー
-                    $unique_color = "#114477";
-                    $web_color    = "#3377B6";
-                    ?>
+            if (intval(get_option('tsa_spam_data_save')) === 1) {
+                if ($gdays < $lower_spam_keep_day_cnt) {
+                    $gdays = $lower_spam_keep_day_cnt;
+                }
+                // 表カラー
+                $unique_color = "#114477";
+                $web_color    = "#3377B6";
+            ?>
                 <h2><?php _e("Throws SPAM Away スパムデータ", 'throws-spam-away'); ?></h2>
                 <h3><?php esc_attr_e(sprintf(__("スパム投稿%d日間の推移", 'throws-spam-away'), $gdays)); ?></h3>
                 <?php if ($_saved) { ?>
@@ -1731,58 +1757,58 @@ class ThrowsSpamAway
                     <table class="tsa_spam_table">
                         <tr>
                             <?php
-                                    $total_qry = "
+                            $total_qry = "
 						SELECT count(ppd) as pageview, ppd
 						FROM (select ip_address, SUBSTRING(post_date,1,10) as ppd from $this->table_name) as A
 						GROUP BY ppd HAVING ppd >= '" . gmdate('Y-m-d', current_time('timestamp') - 86400 * $gdays) . "'
 				ORDER BY pageview DESC
 				LIMIT 1
 				";
-                    $qry       = $wpdb->get_row($total_qry);
-                    $maxxday   = 0;
-                    if ($qry) {
-                        $maxxday = $qry->pageview;
+                            $qry       = $wpdb->get_row($total_qry);
+                            $maxxday   = 0;
+                            if ($qry) {
+                                $maxxday = $qry->pageview;
 
-                        $total_vis = "
+                                $total_vis = "
 							SELECT count(distinct ip_address) as vis, ppd
 							FROM (select ip_address, SUBSTRING(post_date,1,10) as ppd from $this->table_name) as B
 							GROUP BY ppd HAVING ppd >= '" . gmdate('Y-m-d', current_time('timestamp') - 86400 * $gdays) . "'
 						ORDER BY vis DESC
 						LIMIT 1
 						";
-                        $qry_vis   = $wpdb->get_row($total_vis);
-                        $maxxday   += $qry_vis->vis;
-                    }
+                                $qry_vis   = $wpdb->get_row($total_vis);
+                                $maxxday   += $qry_vis->vis;
+                            }
 
-                    if ($maxxday === 0) {
-                        $maxxday = 1;
-                    }
+                            if ($maxxday === 0) {
+                                $maxxday = 1;
+                            }
 
-                    // Y
-                    $gd = (100 / $gdays) . '%';
-                    for ($gg = $gdays - 1; $gg >= 0; $gg--) {
-                        // TOTAL SPAM COUNT
-                        $visitor_qry  = "
+                            // Y
+                            $gd = (100 / $gdays) . '%';
+                            for ($gg = $gdays - 1; $gg >= 0; $gg--) {
+                                // TOTAL SPAM COUNT
+                                $visitor_qry  = "
 		SELECT count(DISTINCT ip_address) AS total
 		FROM (select ip_address, SUBSTRING(post_date,1,10) as ppd from $this->table_name) as B
 		WHERE ppd = '" . gmdate('Y-m-d', current_time('timestamp') - 86400 * $gg) . "'
 								";
-                        $qry_visitors = $wpdb->get_row($visitor_qry);
-                        $px_visitors  = round($qry_visitors->total * 100 / $maxxday);
-                        // TOTAL
-                        $pageview_qry  = "
+                                $qry_visitors = $wpdb->get_row($visitor_qry);
+                                $px_visitors  = round($qry_visitors->total * 100 / $maxxday);
+                                // TOTAL
+                                $pageview_qry  = "
 		SELECT count(ppd) as total
 		FROM (select ip_address, SUBSTRING(post_date,1,10) as ppd from $this->table_name) as C
 		WHERE ppd = '" . gmdate('Y-m-d', current_time('timestamp') - 86400 * $gg) . "'
 						";
-                        $qry_pageviews = $wpdb->get_row($pageview_qry);
-                        $px_pageviews  = round($qry_pageviews->total * 100 / $maxxday);
-                        $px_white      = 100 - $px_pageviews - $px_visitors;
-                        if ($px_white < 0) {
-                            $px_white = 0;
-                        }
+                                $qry_pageviews = $wpdb->get_row($pageview_qry);
+                                $px_pageviews  = round($qry_pageviews->total * 100 / $maxxday);
+                                $px_white      = 100 - $px_pageviews - $px_visitors;
+                                if ($px_white < 0) {
+                                    $px_white = 0;
+                                }
 
-                        print "<td width='" . $gd . "'><div class='tsa_spam_data_day'>
+                                print "<td width='" . $gd . "'><div class='tsa_spam_data_day'>
 					<div style='background:#ffffff;width:100%;height:" . $px_white . "px;'></div>
 					<div style='background:$unique_color;width:100%;height:" . $px_visitors . "px;' title='" . $qry_visitors->total . " ip_addresses'></div>
 					<div style='background:$web_color;width:100%;height:" . $px_pageviews . "px;' title='" . $qry_pageviews->total . " spam comments'></div>
@@ -1791,7 +1817,7 @@ class ThrowsSpamAway
 					<div style='background:;width:100%;height:2.2em;'>" . $qry_visitors->total . "<br />" . $qry_pageviews->total . "</div>
 					<br clear=\"all\" /></div>
 					</td>\n";
-                    } ?>
+                            } ?>
                         </tr>
                     </table>
                 </div>
@@ -1805,7 +1831,7 @@ class ThrowsSpamAway
                 <?php if (count($results) > 0) {
                     wp_enqueue_script('jquery.tablesorter', plugins_url('js/jquery.tablesorter.min.js', __FILE__), array('jquery'), false);
                     wp_enqueue_style('jquery.tablesorter', plugins_url('/images/style.css', __FILE__));
-                    ?>
+                ?>
                     <script type="text/JavaScript">
                         <!--
 					jQuery(function () {
@@ -1872,49 +1898,49 @@ class ThrowsSpamAway
                                 </thead>
                                 <tbody>
                                     <?php
-                                        foreach ($results as $item) {
-                                            $spam_ip         = $item->ip_address;
-                                            $spam_cnt        = $item->cnt;
-                                            $last_post_date  = $item->post_date;
-                                            $spam_error_type = $item->error_type;
-                                            $spam_author     = strip_tags($item->author);
-                                            $spam_comment    = strip_tags($item->comment);
+                                    foreach ($results as $item) {
+                                        $spam_ip         = $item->ip_address;
+                                        $spam_cnt        = $item->cnt;
+                                        $last_post_date  = $item->post_date;
+                                        $spam_error_type = $item->error_type;
+                                        $spam_author     = strip_tags($item->author);
+                                        $spam_comment    = strip_tags($item->comment);
 
-                                            // エラー変換
-                                            $spam_error_type_str = $spam_error_type;
-                                            switch ($spam_error_type) {
-                                                case TSA_NOT_JAPANESE:
-                                                    $spam_error_type_str = __("日本語以外", 'throws-spam-away');
-                                                    break;
-                                                case TSA_MUST_WORD:
-                                                    $spam_error_type_str = __("必須キーワード無し", 'throws-spam-away');
-                                                    break;
-                                                case TSA_NG_WORD:
-                                                    $spam_error_type_str = __("NGキーワード混入", 'throws-spam-away');
-                                                    break;
-                                                case TSA_BLOCK_IP:
-                                                    $spam_error_type_str = __("ブロック対象IPアドレス", 'throws-spam-away');
-                                                    break;
-                                                case TSA_SPAM_BLACKLIST:
-                                                    $spam_error_type_str = __("スパム拒否リスト", 'throws-spam-away');
-                                                    break;
-                                                case TSA_SPAM_TRACKBACK:
-                                                    $spam_error_type_str = __("トラックバックスパム", 'throws-spam-away');
-                                                    break;
-                                                case TSA_URL_COUNT_OVER:
-                                                    $spam_error_type_str = __("URL文字列混入数オーバー", 'throws-spam-away');
-                                                    break;
-                                                case TSA_SPAM_LIMIT_OVER:
-                                                    $spam_error_type_str = __("一定時間スパム判定エラー", 'throws-spam-away');
-                                                    break;
-                                                case TSA_DUMMY_FIELD:
-                                                    $spam_error_type_str = __("ダミー項目エラー", 'throws-spam-away');
-                                                    break;
-                                                case TSA_NOT_IN_WHITELIST_IP:
-                                                    $spam_error_type_str = __("許可リスト許可IP以外", 'throws-spam-away');
-                                                    break;
-                                            }
-                                            ?>
+                                        // エラー変換
+                                        $spam_error_type_str = $spam_error_type;
+                                        switch ($spam_error_type) {
+                                            case TSA_NOT_JAPANESE:
+                                                $spam_error_type_str = __("日本語以外", 'throws-spam-away');
+                                                break;
+                                            case TSA_MUST_WORD:
+                                                $spam_error_type_str = __("必須キーワード無し", 'throws-spam-away');
+                                                break;
+                                            case TSA_NG_WORD:
+                                                $spam_error_type_str = __("NGキーワード混入", 'throws-spam-away');
+                                                break;
+                                            case TSA_BLOCK_IP:
+                                                $spam_error_type_str = __("ブロック対象IPアドレス", 'throws-spam-away');
+                                                break;
+                                            case TSA_SPAM_BLACKLIST:
+                                                $spam_error_type_str = __("スパム拒否リスト", 'throws-spam-away');
+                                                break;
+                                            case TSA_SPAM_TRACKBACK:
+                                                $spam_error_type_str = __("トラックバックスパム", 'throws-spam-away');
+                                                break;
+                                            case TSA_URL_COUNT_OVER:
+                                                $spam_error_type_str = __("URL文字列混入数オーバー", 'throws-spam-away');
+                                                break;
+                                            case TSA_SPAM_LIMIT_OVER:
+                                                $spam_error_type_str = __("一定時間スパム判定エラー", 'throws-spam-away');
+                                                break;
+                                            case TSA_DUMMY_FIELD:
+                                                $spam_error_type_str = __("ダミー項目エラー", 'throws-spam-away');
+                                                break;
+                                            case TSA_NOT_IN_WHITELIST_IP:
+                                                $spam_error_type_str = __("許可リスト許可IP以外", 'throws-spam-away');
+                                                break;
+                                        }
+                                    ?>
                                         <tr>
                                             <td>
                                                 <b><a href="javascript:void(0);" class="openModal" data-ip="<?php esc_attr_e($spam_ip); ?>"><?php esc_attr_e($spam_ip); ?>
@@ -1935,8 +1961,8 @@ class ThrowsSpamAway
                                             </td>
                                         </tr>
                                     <?php
-                                        }
-                    ?>
+                                    }
+                                    ?>
                                 </tbody>
                             </table>
                         </div>
@@ -2050,8 +2076,8 @@ class ThrowsSpamAway
                 <input type="hidden" name="act" value="truncate">
                 <?php
                 $other_attributes = array('onclick' => "return confirm('" . __('すべてのスパムデータが削除されます。よろしいですか？', 'throws-spam-away') . "');");
-        submit_button(__('すべてのデータを削除する', 'throws-spam-away'), 'delete', 'wpdocs-save-settings', true, $other_attributes);
-        ?>
+                submit_button(__('すべてのデータを削除する', 'throws-spam-away'), 'delete', 'wpdocs-save-settings', true, $other_attributes);
+                ?>
                 <?php wp_nonce_field('tsa_action', 'tsa_nonce') ?>
             </form>
         </div>
@@ -2065,7 +2091,7 @@ class ThrowsSpamAway
     public function recommend_setting()
     {
         //		global $wpdb;
-        ?>
+    ?>
         制作中
 <?php
     }
