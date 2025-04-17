@@ -4,7 +4,7 @@
  Plugin URI: https://gti.co.jp/throws-spam-away/
  Description: コメント内に日本語の記述が存在しない場合はあたかも受け付けたように振る舞いながらも捨ててしまうプラグイン
  Author: 株式会社ジーティーアイ　さとう　たけし
- Version: 3.7
+ Version: 3.7.1
  Author URI: https://gti.co.jp/
  License: GPL2
  Text Domain: throws-spam-away
@@ -34,7 +34,7 @@ require_once 'hostbyip.php';
 $tsa_spam_tbl_name = 'tsa_spam';
 
 // Throws SPAM Awayバージョン
-$tsa_version = '3.6';
+$tsa_version = '3.7.1';
 // スパムデータベースバージョン
 $tsa_db_version = 3.5;  // 3.5からデータベース変更 [comment_content, comment_agent, comment_parent]追加
 /**
@@ -67,13 +67,13 @@ $df_japanese_string_min_cnt = 3;
 $df_back_second = 0;
 
 /** コメント欄下に表示される注意文言（初期設定） */
-$df_caution_msg = __('日本語が含まれない投稿は無視されますのでご注意ください。（スパム対策）', 'throws-spam-away');
+$df_caution_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /** コメント欄下に表示する位置（初期設定）1:コメント送信ボタンの上 2:コメント送信フォームの下 */
 $df_caution_msg_pnt = 1;  //1:"comment_form", 2:"comment_form_after", 3:"comment_form_submit_field"
 
 /** エラー時に表示されるエラー文言（初期設定） */
-$df_err_msg = __('日本語を規定文字数以上含まない記事は投稿できませんよ。', 'throws-spam-away');
+$df_err_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /***** URL文字列除外 設定 ****/
 /** URL数の制限をするか */
@@ -83,15 +83,15 @@ $df_url_cnt_chk_flg = 1; // 1:する
 $df_ok_url_cnt = 3;  // ３つまで許容
 
 /** URL数制限値オーバーのエラー文言（初期設定） */
-$df_url_cnt_over_err_msg = '';
+$df_url_cnt_over_err_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /***** NGキーワード/必須キーワード 制御設定 ****/
 
 /** キーワードNGエラー時に表示されるエラー文言（初期設定） */
-$df_ng_key_err_msg = __('NGキーワードが含まれているため投稿できません。', 'throws-spam-away');
+$df_ng_key_err_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /** 必須キーワードが含まれないエラー文言（初期設定） */
-$df_must_key_err_msg = __('必須キーワードが含まれていないため投稿できません。', 'throws-spam-away');
+$df_must_key_err_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /** トラックバックへの対応設定 */
 
@@ -123,7 +123,7 @@ $df_spam_champuru_flg = 2;       // "2":しない
 $df_ip_block_from_spam_chk_flg = 1;  // "1":する
 
 /** ブロックIPアドレスからの投稿の場合に表示されるエラー文言（初期設定） */
-$df_block_ip_address_err_msg = '';
+$df_block_ip_address_err_msg = '';  // textdomain 読込後設定 newThrowsSpamAway->tsa_load_textdomain
 
 /***** ver.2.8から ****/
 /** 許可リスト以外無視するか */

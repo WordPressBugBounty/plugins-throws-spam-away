@@ -3,8 +3,8 @@ Contributors: tsato
 Donate link: https://gti.co.jp/throws-spam-away
 Tags: comments, spam
 Requires at least: 5.1
-Tested up to: 6.7.1
-Stable tag: 3.7
+Tested up to: 6.8
+Stable tag: 3.7.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,8 @@ IPアドレスの指定「ブロックリスト」「許可リスト」共に「
 
 -- これまでの変更点について
 ※ バージョンの 第4位はWordPressやPHPのバージョンアップの確認を行った際に変更しています。機能変更はありません。
+・バージョン 3.7.1
+textdomain の読込を修正
 ・バージョン 3.7
 ログインしているユーザーがコメントを投稿した場合はスパム判定を行わない仕様でしたが
 設定にてログインユーザーの投稿にスパム判定を行うかどうかを選択出来るようにしました。
@@ -425,6 +427,9 @@ e.g.
 == Screenshots ==
 
 == Changelog ==
+= 3.7.1 =
+textdomainの読込を修正
+
 = 3.7 =
 ログインしているユーザーがコメントを投稿した場合はスパム判定を行わない仕様でしたが
 設定にてログインユーザーの投稿にスパム判定を行うかどうかを選択出来るようにしました。

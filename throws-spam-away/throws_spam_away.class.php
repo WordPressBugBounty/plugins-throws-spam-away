@@ -4,7 +4,7 @@
  * <p>ThrowsSpamAway</p> Class
  * WordPress's Plugin
  * @author Takeshi Satoh@GTI Inc. 2024
- * @version 3.6
+ * @version 3.7.1
  */
 class ThrowsSpamAway
 {
@@ -22,7 +22,7 @@ class ThrowsSpamAway
         global $df_spam_keep_day_cnt, $lower_spam_keep_day_cnt;
         global $wpdb;
         // language
-        load_plugin_textdomain('throws-spam-away', false, basename(dirname(__FILE__)) . '/languages');
+        add_action('after_setup_theme', array($this, 'tsa_load_textdomain'));
         // Activate
         register_activation_hook(__FILE__, array($this, 'activate'));
 
@@ -130,6 +130,28 @@ class ThrowsSpamAway
     public function deactivate()
     {
         // アンインストール時に設定値削除
+    }
+
+    /**
+     * Load textdomain
+     *
+     * @return void
+     */
+    public function tsa_load_textdomain()
+    {
+        global $df_caution_msg, $df_err_msg, $df_ng_key_err_msg, $df_must_key_err_msg;
+        global $df_block_ip_address_err_msg;
+        load_plugin_textdomain('throws-spam-away', false, basename(dirname(__FILE__)) . '/languages');
+        /** コメント欄下に表示される注意文言（初期設定） */
+        $df_caution_msg = __('日本語が含まれない投稿は無視されますのでご注意ください。（スパム対策）', 'throws-spam-away');
+        /** エラー時に表示されるエラー文言（初期設定） */
+        $df_err_msg = __('日本語を規定文字数以上含まない記事は投稿できませんよ。', 'throws-spam-away');
+        /** キーワードNGエラー時に表示されるエラー文言（初期設定） */
+        $df_ng_key_err_msg = __('NGキーワードが含まれているため投稿できません。', 'throws-spam-away');
+        /** 必須キーワードが含まれないエラー文言（初期設定） */
+        $df_must_key_err_msg = __('必須キーワードが含まれていないため投稿できません。', 'throws-spam-away');
+        /** ブロックIPアドレスからの投稿の場合に表示されるエラー文言（初期設定） */
+        $df_block_ip_address_err_msg = "";  // IPアドレスブロックのエラーメッセージは空にしておく
     }
 
     /**
