@@ -3,8 +3,8 @@
 /**
  * <p>ThrowsSpamAway</p> Class
  * WordPress's Plugin
- * @author Takeshi Satoh@GTI Inc. 2024
- * @version 3.7.1
+ * @author Takeshi Satoh@GTI Inc. 2025
+ * @version 3.8
  */
 class ThrowsSpamAway
 {
@@ -870,7 +870,8 @@ class ThrowsSpamAway
             $author,
             $comment,
             $post_id,
-            $tsa_on_flg
+            $tsa_on_flg,
+            $this
         );
 
         return apply_filters('tsa_validate_comment_result', $result_valid);
