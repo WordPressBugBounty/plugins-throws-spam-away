@@ -317,7 +317,19 @@ class ThrowsSpamAway
         }
     }
 
-    public function comment_post($commentdata)
+    /**
+     * コメント投稿データを検査し、スパム判定を行う.
+     *
+     * - ログインユーザーや許可IPは通過させる
+     * - ダミーフィールド、日本語文字数、NGワード、URL数などの各種検査を実施
+     * - スパムと判定された場合は、DBに記録した上で元の画面へリダイレクトまたはエラーメッセージを表示
+     *
+     * WordPress の preprocess_comment フィルタにフックされる.
+     *
+     * @param array $commentdata 投稿されたコメントデータ（author, content, post_ID 等を含む）
+     * @return array コメントが正常と判定された場合はそのまま返却し、スパムの場合は処理を終了する
+     */
+    public function tsa_preprocess_comment($commentdata)
     {
         global $newThrowsSpamAway;
         global $user_ID;
@@ -339,15 +351,19 @@ class ThrowsSpamAway
         }
 
         // コメント（comment）及び名前（author）の中も検査
-        $id      = @$commentdata['comment_post_ID'];
-        $author  = @$commentdata['comment_author'];
-        $author_email = @$commentdata['comment_author_email'];
-        $author_url = @$commentdata['comment_author_url'];
-        $comment = @$commentdata['comment_content'];
-        $comment_content = @$commentdata['comment_content'];
-        $comment_type = @$commentdata['comment_type'];
-        $comment_parent = @$commentdata['comment_parent'];
-        $comment_agent = @$commentdata['comment_agent'];
+        $id              = isset($commentdata['comment_post_ID'])      ? (int) $commentdata['comment_post_ID']      : 0;
+        $author          = isset($commentdata['comment_author'])       ? (string) $commentdata['comment_author']    : '';
+        $author_email    = isset($commentdata['comment_author_email']) ? (string) $commentdata['comment_author_email'] : '';
+        $author_url      = isset($commentdata['comment_author_url'])   ? (string) $commentdata['comment_author_url']   : '';
+        $comment_content = isset($commentdata['comment_content'])      ? (string) $commentdata['comment_content']   : '';
+        $comment_type    = isset($commentdata['comment_type'])         ? (string) $commentdata['comment_type']      : '';
+        $comment_parent  = isset($commentdata['comment_parent'])       ? (int) $commentdata['comment_parent']       : 0;
+        $comment_agent   = isset($commentdata['comment_agent'])
+            ? (string) $commentdata['comment_agent']
+            : (isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '');
+
+        // 互換性のために $comment にも代入
+        $comment = $comment_content;
 
         // チェック対象IPアドレス
         $remote_ip = $this->is_ipv4($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : '';
@@ -423,12 +439,12 @@ class ThrowsSpamAway
         $back_url = (isset($_SERVER['HTTP_REFERER']) ? esc_url_raw($_SERVER['HTTP_REFERER']) : '');
         // タイム値が０なら元画面へそのままリダイレクト
         if ($back_time === 0) {
-            header('Location:' . $back_url);
-            die;
-        } else {
-            wp_die(wp_kses_post($error_msg) . '<script type="text/javascript">var closing = function() {location.href="' . $back_url . '";}
-					window.setTimeout( closing, ' . $back_time . ')</script>');
+            wp_safe_redirect($back_url);
+            exit;
         }
+
+        wp_die(wp_kses_post($error_msg) . '<script type="text/javascript">var closing = function() {location.href="' . $back_url . '";}
+                window.setTimeout( closing, ' . $back_time . ')</script>');
     }
 
     /** ipv4 Check */
