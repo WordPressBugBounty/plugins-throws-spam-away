@@ -3,8 +3,8 @@ Contributors: tsato
 Donate link: https://gti.co.jp/throws-spam-away
 Tags: comments, spam
 Requires at least: 6.0
-Tested up to: 6.8.2
-Stable tag: 3.8.1
+Tested up to: 6.9.1
+Stable tag: 3.8.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,10 @@ IPアドレスの指定「ブロックリスト」「許可リスト」共に「
 
 -- これまでの変更点について
 ※ バージョンの 第4位はWordPressやPHPのバージョンアップの確認を行った際に変更しています。機能変更はありません。
+・バージョン 3.8.2
+WordPressバージョン 6.9.1 対応確認。
+PHP8.5対応確認。
+設定の変更箇所がある場合に設定の保存を促すメッセージを表示するように変更。
 ・バージョン 3.8.1
 * リダイレクト処理を wp_safe_redirect に統一し、モバイル環境での二重送信発生を抑止
 * 諸々コード修正（互換性・可読性改善）
@@ -433,6 +437,11 @@ e.g.
 == Screenshots ==
 
 == Changelog ==
+= 3.8.2 =
+WordPressバージョン 3.9.2 対応確認。
+PHP8.5対応確認。
+設定の変更箇所がある場合に設定の保存を促すメッセージを表示するように変更。
+
 = 3.8.1 =
 リダイレクト処理を wp_safe_redirect に統一し、モバイル環境での二重送信発生を抑止
 諸々コード修正（互換性・可読性改善）

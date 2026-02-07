@@ -928,6 +928,11 @@ class ThrowsSpamAway
             }
             add_submenu_page('throws-spam-away', __('スパムコメント一括削除', 'throws-spam-away'), __('スパムコメント一括削除', 'throws-spam_away'), $mincap, 'throws-spam-away/throws_spam_away_comments.php');
         }
+        // First submenu label should be "設定" instead of "Throws SPAM Away".
+        global $submenu;
+        if (isset($submenu['throws-spam-away'][0][0])) {
+            $submenu['throws-spam-away'][0][0] = __('設定', 'throws-spam-away');
+        }
     }
 
     /**
@@ -1037,6 +1042,31 @@ class ThrowsSpamAway
             table.form-table th {
                 width: 200px;
             }
+            .tsa-unsaved-float {
+                position: fixed;
+                left: 24px;
+                bottom: 24px;
+                z-index: 9999;
+                max-width: 360px;
+                padding: 12px 14px;
+                background: #111827;
+                color: #f9fafb;
+                border-radius: 12px;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 13px;
+            }
+            .tsa-unsaved-float a {
+                color: #93c5fd;
+                text-decoration: none;
+                border-bottom: 1px solid rgba(147, 197, 253, 0.5);
+            }
+            .tsa-unsaved-float a:hover {
+                color: #bfdbfe;
+                border-bottom-color: rgba(191, 219, 254, 0.9);
+            }
         </style>
         <script type="text/Javascript">
             // 配列重複チェック
@@ -1096,12 +1126,51 @@ class ThrowsSpamAway
 				return false;
 			}
 		</script>
+        <script type="text/Javascript">
+            (function () {
+                function ready(fn) {
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', fn);
+                    } else {
+                        fn();
+                    }
+                }
+
+                ready(function () {
+                    var form = document.getElementById('tsa_options_form');
+                    var notice = document.getElementById('tsa_unsaved_notice');
+                    if (!form || !notice) {
+                        return;
+                    }
+                    if (window.location.hash === '#tsa_submit_button' && window.history && window.history.replaceState) {
+                        window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+                    }
+                    var isDirty = false;
+                    var markDirty = function () {
+                        if (isDirty) {
+                            return;
+                        }
+                        isDirty = true;
+                        notice.style.display = 'block';
+                    };
+                    form.addEventListener('change', markDirty);
+                    form.addEventListener('input', markDirty);
+                    form.addEventListener('keyup', markDirty);
+                    form.addEventListener('paste', markDirty);
+                    form.addEventListener('submit', function () {
+                        if (window.location.hash === '#tsa_submit_button' && window.history && window.history.replaceState) {
+                            window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+                        }
+                    });
+                });
+            })();
+        </script>
         <div class="wrap">
             <h2 id="option_setting">Throws SPAM Away設定</h2>
             <?php if ($_saved) { ?>
                 <div class="updated" id="message">設定の更新が完了しました。</div>
             <?php } ?>
-            <form method="post" action="">
+            <form id="tsa_options_form" method="post" action="">
                 <?php wp_nonce_field('tsa_action', 'tsa_nonce') ?>
                 <p>
                     <a href="#spam_opt">スパム対策機能設定</a> | <a href="#url_opt">URL文字列除外 設定</a> | <a href="#keyword_opt">NGキーワード
@@ -1539,8 +1608,12 @@ class ThrowsSpamAway
                  * type="hidden" name="page_options"
                  * value="tsa_on_flg,tsa_without_title_str,tsa_japanese_string_min_count,tsa_back_second,tsa_caution_message,tsa_caution_msg_point,tsa_error_message,tsa_ng_keywords,tsa_ng_key_error_message,tsa_must_keywords,tsa_must_key_error_message,tsa_tb_on_flg,tsa_tb_url_flg,tsa_block_ip_addresses,tsa_ip_block_from_spam_chk_flg,tsa_block_ip_address_error_message,tsa_url_count_on_flg,tsa_ok_url_count,tsa_url_count_over_error_message,tsa_spam_data_save,tsa_spam_limit_flg,tsa_spam_limit_minutes,tsa_spam_limit_count,tsa_spam_limit_over_interval,tsa_spam_limit_over_interval_error_message,tsa_spam_champuru_flg,tsa_spam_keep_day_count,tsa_spam_data_delete_flg,tsa_white_ip_addresses,tsa_dummy_param_field_flg,tsa_memo,tsa_spam_champuru_by_text,tsa_only_whitelist_ip_flg" />
                  */ ?>
+                <div id="tsa_unsaved_notice" class="tsa-unsaved-float" style="display:none;">
+                    <strong><?php _e('変更点があります。保存してください。', 'throws-spam-away'); ?></strong>
+                    <a href="#tsa_submit_button"><?php _e('保存へ移動', 'throws-spam-away'); ?></a>
+                </div>
                 <p class="submit" id="tsa_submit_button">
-                    <input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>">
+                    <input type="submit" id="tsa_save_changes" class="button-primary" value="<?php _e('Save Changes') ?>">
                 </p>
                 <p>Throws SPAM Away version <?php esc_attr_e($tsa_version); ?></p>
 
